@@ -1,6 +1,6 @@
 # Tasks API
 
-A minimal FastAPI task tracker used in the DevOps Bootcamp (Weeks 1, 2, and 8).
+A minimal FastAPI task tracker.
 
 ## Quick Start
 
