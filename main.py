@@ -3,12 +3,16 @@ from typing import List
 from contextlib import asynccontextmanager
 import db
 from task import Task, TaskOut
+import cache
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.connect()
+    await cache.connect()
     yield
+    await cache.disconnect()
     await db.disconnect()
+    
 
 app = FastAPI(lifespan=lifespan, title="Tasks API", description="Bootcamp demo app — Week 1/2/8")
 
@@ -37,6 +41,7 @@ async def get_task(task_id: int):
     result = await db.get_task(task_id)
     if result is None:
         raise HTTPException(status_code=404, detail="Task not found")
+    return result
 
 
 @app.patch("/tasks/{task_id}", response_model=TaskOut)
