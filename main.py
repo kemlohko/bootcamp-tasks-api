@@ -1,9 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import Response
 from typing import List
 from contextlib import asynccontextmanager
-import db
+import db, cache, metrics
 from task import Task, TaskOut
-import cache
+import time
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -16,6 +17,30 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, title="Tasks API", description="Bootcamp demo app — Week 1/2/8")
 
+@app.middleware("http")
+async def track_metrics(request: Request, call_next):
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration = time.perf_counter() - start
+
+    # Use the route template (e.g. "/tasks/{task_id}") instead of the raw
+    # path, so metric cardinality doesn't grow with every unique task ID
+    route = request.scope.get("route")
+    path = route.path if route else request.url.path
+
+    metrics.REQUEST_COUNT.labels(
+        method=request.method, path=path, status_code=response.status_code
+    ).inc()
+    metrics.REQUEST_DURATION.labels(
+        method=request.method, path=path
+    ).observe(duration)
+
+    return response
+
+@app.get("/metrics")
+async def get_metrics():
+    data, content_type = metrics.get_metrics()
+    return Response(content=data, media_type=content_type)
 
 @app.get("/health")
 async def health():
@@ -33,7 +58,10 @@ async def list_tasks():
 
 @app.post("/tasks", response_model=TaskOut, status_code=201)
 async def create_task(task: Task):
-   return await db.create_task(task.title, task.description, task.done, task.priority)
+   result = await db.create_task(task.title, task.description, task.done, task.priority)
+   metrics.TASKS_CREATED.inc()
+   metrics.TASKS_ACTIVE.inc()
+   return result
 
 
 @app.get("/tasks/{task_id}", response_model=TaskOut)
@@ -57,3 +85,4 @@ async def delete_task(task_id: int):
     deleted = await db.delete_task(task_id) 
     if not deleted:
         raise HTTPException(status_code=404, detail="Task not found")
+    metrics.TASKS_ACTIVE.dec()
