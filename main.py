@@ -1,62 +1,54 @@
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Optional, List
-import os
+from typing import List
+from contextlib import asynccontextmanager
+import db
+from task import Task, TaskOut
 
-app = FastAPI(title="Tasks API", description="Bootcamp demo app — Week 1/2/8")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await db.connect()
+    yield
+    await db.disconnect()
 
-# In-memory store for simplicity (Week 2 labs add a real database)
-tasks: dict[int, dict] = {}
-next_id = 1
-
-
-class Task(BaseModel):
-    title: str
-    description: Optional[str] = None
-    done: bool = False
-    priority: Optional[str] = None  # "low" | "medium" | "high" — set manually or by the priority-classifier model
-
-
-class TaskOut(Task):
-    id: int
+app = FastAPI(lifespan=lifespan, title="Tasks API", description="Bootcamp demo app — Week 1/2/8")
 
 
 @app.get("/health")
-def health():
-    return {"status": "ok", "service": "tasks-api"}
+async def health():
+    try:
+        await db.ping()
+        return {"status": "ok", "service": "tasks-api"}
+    except Exception:
+        raise HTTPException(status_code=503, detail="database unavailable")
 
 
 @app.get("/tasks", response_model=List[TaskOut])
-def list_tasks():
-    return [{"id": k, **v} for k, v in tasks.items()]
+async def list_tasks():
+    return await db.list_tasks()
 
 
 @app.post("/tasks", response_model=TaskOut, status_code=201)
-def create_task(task: Task):
-    global next_id
-    tasks[next_id] = task.model_dump()
-    result = {"id": next_id, **tasks[next_id]}
-    next_id += 1
-    return result
+async def create_task(task: Task):
+   return await db.create_task(task.title, task.description, task.done, task.priority)
 
 
 @app.get("/tasks/{task_id}", response_model=TaskOut)
-def get_task(task_id: int):
-    if task_id not in tasks:
+async def get_task(task_id: int):
+    result = await db.get_task(task_id)
+    if result is None:
         raise HTTPException(status_code=404, detail="Task not found")
-    return {"id": task_id, **tasks[task_id]}
 
 
 @app.patch("/tasks/{task_id}", response_model=TaskOut)
-def update_task(task_id: int, task: Task):
-    if task_id not in tasks:
+async def update_task(task_id: int, task: Task):
+    result = await db.update_task(task_id, task.title, task.description, task.done, task.priority)
+    if result is None:
         raise HTTPException(status_code=404, detail="Task not found")
-    tasks[task_id] = task.model_dump()
-    return {"id": task_id, **tasks[task_id]}
+    return result
 
 
 @app.delete("/tasks/{task_id}", status_code=204)
-def delete_task(task_id: int):
-    if task_id not in tasks:
+async def delete_task(task_id: int):
+    deleted = await db.delete_task(task_id) 
+    if not deleted:
         raise HTTPException(status_code=404, detail="Task not found")
-    del tasks[task_id]
