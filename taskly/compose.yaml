@@ -3,8 +3,47 @@ services:
     build: .
     ports:
       - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    restart: on-failure
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - taskly-net
+    environment:
+      DB_HOST: postgres
+      DB_PASSWORD: postgres
+      DB_USER: postgres
+      DB_PORT: 5432
+      DB_NAME: taskly
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+  
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: taskly
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - taskly-net
+  
+  redis:
+    image: redis:7-alpine
+    restart: always
+    networks:
+      - taskly-net
+
+networks:
+  taskly-net:
+
+volumes:
+  pgdata:
+  
