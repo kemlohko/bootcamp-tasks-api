@@ -15,7 +15,7 @@ env:
 jobs:
   test-scan-build:
     runs-on: ubuntu-latest
-    ouputs:
+    outputs:
       image_tag: ${{ steps.vars.outputs.image_tag }}
     steps:
       - name: Checkout code
