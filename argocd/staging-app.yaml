@@ -12,8 +12,8 @@ spec:
     path: helm
     helm:
       valueFiles:
-        - values-staging.yamlshow me both
-        
+        - values-staging.yaml
+
 
   destination:
     server: https://kubernetes.default.svc

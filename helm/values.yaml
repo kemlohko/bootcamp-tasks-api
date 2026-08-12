@@ -1,9 +1,8 @@
 # Default values
-
 replicaCount: 3
 
 image:
-  repository: 686699774218.dkr.ecr.us-east-1.amazonaws.com/taskly
+  repository: 686699774218.dkr.ecr.us-east-1.amazonaws.com/alex/taskly
   tag: latest        # overridden per-environment by CI
   pullPolicy: IfNotPresent
 
