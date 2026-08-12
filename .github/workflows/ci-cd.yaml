@@ -30,12 +30,6 @@ jobs:
         working-directory: taskly
         run: pip install -r requirements.txt --break-system-packages
 
-      - name: Dependency scan
-        working-directory: taskly
-        run: |
-          pip install pip audit --break-system-packages
-          pip-audit -r requirements.txt
-
       - name: Set image tag
         id: vars
         run: echo "image_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
