@@ -1,16 +1,36 @@
 import asyncpg
-import os
+import os, json
 import cache
 from logging_setup import logger
+import boto3
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    f"postgresql://{os.environ.get('DB_USER', 'postgres')}:"
-    f"{os.environ.get('DB_PASSWORD', 'postgres')}@"
-    f"{os.environ.get('DB_HOST', 'localhost')}:"
-    f"{os.environ.get('DB_PORT', '5432')}/"
-    f"{os.environ.get('DB_NAME', 'taskly')}"
-)
+
+DB_SECRET_ARN = os.environ.get("DB_SECRET_ARN")
+
+
+def get_db_password():
+    if not DB_SECRET_ARN:
+        return os.environ.get("DB_PASSWORD", "postgres")  # local dev fallback
+
+    client = boto3.client("secretsmanager", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+    response = client.get_secret_value(SecretId=DB_SECRET_ARN)
+    secret = json.loads(response["SecretString"])
+    return secret["password"]
+
+
+def build_database_url():
+    password = get_db_password()
+    return (
+        f"postgresql://{os.environ.get('DB_USER', 'postgres')}:"
+        f"{password}@"
+        f"{os.environ.get('DB_HOST', 'localhost')}:"
+        f"{os.environ.get('DB_PORT', '5432')}/"
+        f"{os.environ.get('DB_NAME', 'taskly')}"
+    )
+
+
+DATABASE_URL = build_database_url()
+
 
 CREATE_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS tasks (
