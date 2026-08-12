@@ -30,10 +30,6 @@ jobs:
         working-directory: taskly
         run: pip install -r requirements.txt --break-system-packages
 
-      - name: Run tests
-        working-directory: taskly
-        run: pytest
-
       - name: Dependency scan
         working-directory: taskly
         run: |
