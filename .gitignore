@@ -5,3 +5,6 @@ venv/
 .venv/
 *.egg-info/
 dist/
+.terraform/
+.terraform.*
+.DS_Store
