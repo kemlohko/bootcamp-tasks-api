@@ -1,5 +1,5 @@
 image:
-  tag: "REPLACED_BY_CI"   # GitHub Actions sets this to the built image's SHA/digest
+  tag: "4aef7ca6b0407ee593d2eb494bd54b2f60ff20ca"
 
 replicaCount: 2
 
