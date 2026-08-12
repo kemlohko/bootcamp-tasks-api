@@ -1,0 +1,12 @@
+image:
+  tag: "REPLACED_ON_PROMOTION"   # copied from staging's digest after manual approval
+
+replicaCount: 3
+
+autoscaling:
+  minReplicas: 3
+  maxReplicas: 10
+
+ingress:
+  enabled: true
+  host: alex.taskly.ironlabs.online

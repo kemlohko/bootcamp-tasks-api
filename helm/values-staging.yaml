@@ -1,0 +1,12 @@
+image:
+  tag: "REPLACED_BY_CI"   # GitHub Actions sets this to the built image's SHA/digest
+
+replicaCount: 2
+
+autoscaling:
+  minReplicas: 2
+  maxReplicas: 5
+
+ingress:
+  enabled: true
+  host: alex.staging.taskly.ironlabs.online

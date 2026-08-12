@@ -1,0 +1,46 @@
+# Default values
+
+replicaCount: 3
+
+image:
+  repository: 686699774218.dkr.ecr.us-east-1.amazonaws.com/taskly
+  tag: latest        # overridden per-environment by CI
+  pullPolicy: IfNotPresent
+
+serviceAccount:
+  name: taskly-app    # matches the ServiceAccount created via Terraform IRSA setup
+
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 256Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# Name of the K8s Secret that Terraform creates (DB_HOST, DB_PORT, DB_SECRET_ARN, REDIS_URL, etc.)
+envSecretName: taskly-db-credentials
+
+livenessProbe:
+  path: /health
+  initialDelaySeconds: 10
+  periodSeconds: 15
+
+readinessProbe:
+  path: /health
+  initialDelaySeconds: 5
+  periodSeconds: 10
+
+ingress:
+  enabled: false   # enabled per-environment
