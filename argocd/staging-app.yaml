@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskly-staging
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/kemlohko/bootcamp-tasks-api.git
+    targetRevision: main
+    path: helm
+    helm:
+      valueFiles:
+        - values-staging.yamlshow me both
+        
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taskly-staging
+
+  syncPolicy:
+    automated:
+      prune: true       # remove resources that were deleted from Git
+      selfHeal: true     # revert manual kubectl changes back to match Git
+    syncOptions:
+      - CreateNamespace=true

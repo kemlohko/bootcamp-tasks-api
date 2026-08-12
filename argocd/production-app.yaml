@@ -1,0 +1,26 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taskly-production
+  namespace: argocd
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/kemlohko/bootcamp-tasks-api.git
+    targetRevision: main
+    path: helm
+    helm:
+      valueFiles:
+        - values-production.yaml
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taskly-production
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
