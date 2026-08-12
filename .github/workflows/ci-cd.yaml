@@ -1,0 +1,117 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY: alex/taskly
+
+jobs:
+  test-scan-build:
+    runs_on: ubuntu-latest
+    ouputs:
+      image_tag: ${{ steps.vars.outputs.image_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+        
+      - name: Install dependencies
+        working-directory: taskly
+        run: pip install -r requirements.txt --break-system-packages
+
+      - name: Run tests
+        working-directory: taskly
+        run: pytest
+
+      - name: Dependency scan
+        working-directory: taskly
+        run: |
+          pip install pip audit --break-system-packages
+          pip-audit -r requirements.txt
+
+      - name: Set image tag
+        id: vars
+        run: echo "image_tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::686699774218:role/github-actions-role-alex
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR_REPOSITORY
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build image
+        working-directory: taskly
+        env: 
+          ECR_REGISTRY: ${{ steps.ecr-login.ouputs.registry }}
+          IMAGE_TAG: ${{ steps.vars.outputs.image_tag }}
+        run: |
+          docker build -t ${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG} ./app
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.vars.outputs.image_tag }}
+          severity: CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - name: Push image to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ steps.vars.outputs.image_tag }}
+        run: |
+          docker push "${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG}"
+  
+  deploy-staging:
+    needs: test-scan-build
+    runs_on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update staging Helm values
+        run: |
+          sed -i "s|tag: .*|tag: \"${{ needs.test-scan-build.outputs.image_tag }}\"|" helm/values-staging.yaml
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helm/values-staging.yaml
+          git diff --cached --quiet && echo "No changes to commit" || \
+            (git commit -m "Deploy &{{ needs.test-scan-build.outputs.image_tag }} to staging" && git push)
+
+  deploy-production:
+    needs: [test-scan-build, deploy-staging]
+    runs_on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Update production Helm values
+        run: |
+          sed -i "s|tag: .*|tag: \"${{ needs.test-scan-build.outputs.image_tag }}\"|" helm/values-production.yaml
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add helm/values-production.yaml
+          git diff --cached --quiet && echo "No changes to commit" || \
+            (git commit -m "Promote ${{ needs.test-scan-build.outputs.image_tag }} to production" && git push)      
