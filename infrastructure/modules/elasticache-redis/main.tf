@@ -1,10 +1,10 @@
-resource "aws_elasticache_subnet_group" "taskly" {
-  name = "taskly-redis-subnet-group-${var.developer_name}-${var.environment}"
+resource "aws_elasticache_subnet_group" "platform-sub-net" {
+  name = "platform-${var.developer_name}-redis-subnet-group"
   subnet_ids = var.private_subnet_ids
 }
 
-resource "aws_security_group" "redis" {
-  name = "taskly-redis-sg-${var.developer_name}-${var.environment}"
+resource "aws_security_group" "platform-redis-sg" {
+  name = "platform-${var.developer_name}-redis-sg"
   description = "Allow Redis access from EKS node only"
   vpc_id = var.vpc_id
 
@@ -24,12 +24,12 @@ resource "aws_security_group" "redis" {
   }
 
   tags = {
-    Name = "taskly-redis-sg-${var.developer_name}-${var.environment}"
+    Name = "platform-${var.developer_name}-redis-sg"
   }
 }
 
-resource "aws_elasticache_cluster" "taskly" {
-  cluster_id = "taskly-${var.developer_name}-${var.environment}"
+resource "aws_elasticache_cluster" "platform-redis" {
+  cluster_id = "platform-${var.developer_name}"
   engine = var.elasticache_engine
   engine_version = var.elasticache_engine_version
   node_type = var.node_type
@@ -37,11 +37,10 @@ resource "aws_elasticache_cluster" "taskly" {
   port = var.redis_port
   parameter_group_name = var.parameter_group_name
 
-  subnet_group_name = aws_elasticache_subnet_group.taskly.name
-  security_group_ids = [ aws_security_group.redis.id ]
+  subnet_group_name = aws_elasticache_subnet_group.platform-sub-net.name
+  security_group_ids = [ aws_security_group.platform-redis-sg.id ]
 
   tags = {
-    Name = "taskly-${var.developer_name}-${var.environment}"
-    Environment = var.environment
+    Name = "platform-${var.developer_name}-redis"
   }
 }

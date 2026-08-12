@@ -1,14 +1,14 @@
-resource "aws_db_subnet_group" "taskly" {
-  name = "taskly-db-subnet-group-${var.developer_name}-${var.environment}"
+resource "aws_db_subnet_group" "platform-rds-sub-net" {
+  name = "platform-${var.developer_name}-db-subnet-group"
   subnet_ids = var.private_subnet_ids
 
   tags = {
-    Name = "taskly-db-subnet-group-${var.developer_name}-${var.environment}"
+    Name = "platform-${var.developer_name}-db-subnet-group"
   }
 }
 
-resource "aws_security_group" "rds" {
-    name = "taskly-rds-sg-${var.developer_name}-${var.environment}"
+resource "aws_security_group" "platform-rds-sg" {
+    name = "platform-${var.developer_name}-rds-sg"
     description = "Allo Postgres access from EKS nodes only"
     vpc_id = var.vpc_id
 
@@ -28,12 +28,12 @@ resource "aws_security_group" "rds" {
     }
 
     tags = {
-        Name = "taskly-rds-sg-${var.developer_name}-${var.environment}"
+        Name = "platform-${var.developer_name}-rds-sg"
     } 
 }
 
-resource "aws_db_instance" "taskly" {
-  identifier = "taskly-${var.developer_name}-${var.environment}"
+resource "aws_db_instance" "platform-rds" {
+  identifier = "platform-${var.developer_name}-rds"
   engine = var.rds_engine
   engine_version = var.rds_engine_version
   instance_class = var.db_instance_class
@@ -47,18 +47,17 @@ resource "aws_db_instance" "taskly" {
   username = var.db_username
   manage_master_user_password = true # RDS generates & stores password in Secrets Manager
 
-  db_subnet_group_name = aws_db_subnet_group.taskly.name
-  vpc_security_group_ids = [ aws_security_group.rds.id ]
+  db_subnet_group_name = aws_db_subnet_group.platform-rds-sub-net.name
+  vpc_security_group_ids = [ aws_security_group.platform-rds-sg.id ]
 
-  multi_az = var.environment == "production" ? true : false
+  multi_az = true
   publicly_accessible = false
 
-  backup_retention_period = var.environment == "production" ? var.backup_retention_period_production : var.backup_retention_period_staging
-  skip_final_snapshot = var.environment == "production" ? false : true
-  deletion_protection = var.environment == "production" ? true : false
+  backup_retention_period = var.backup_retention_period
+  skip_final_snapshot = true
+  deletion_protection = false
 
   tags = {
-    Name = "taskly-${var.developer_name}-${var.environment}"
-    Environment = var.environment
+    Name = "platform-${var.developer_name}-rds"
   }
 }

@@ -10,10 +10,6 @@ variable "eks_node_security_group_id" {
   type = string
 }
 
-variable "environment" {
-  type = string
-}
-
 variable "db_instance_class" {
   type    = string
   default = "db.t3.micro"
@@ -52,14 +48,9 @@ variable "storage_type" {
   default = "gp3"
 }
 
-variable "backup_retention_period_production" {
+variable "backup_retention_period" {
   type = number
   default = 7
-}
-
-variable "backup_retention_period_staging" {
-  type = number
-  default = 1
 }
 
 variable "rds_engine" {

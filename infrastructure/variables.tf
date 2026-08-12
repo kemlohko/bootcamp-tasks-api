@@ -53,3 +53,7 @@ variable "instance_type" {
   type    = string
   default = "t3.medium"
 }
+variable "hosted_zone_id" {
+  type    = string
+  default = "Z042372728MB5VI4H04IG"
+}

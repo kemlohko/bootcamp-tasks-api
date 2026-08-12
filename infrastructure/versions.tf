@@ -8,11 +8,11 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "platform-alex-terraform-state"
-    key = "production/terraform.tfstate"
-    region = "us-east-1"
+    bucket       = "platform-alex-terraform-state"
+    key          = "terraform.tfstate"
+    region       = "us-east-1"
     use_lockfile = true
-    encrypt = true
+    encrypt      = true
   }
 }
 

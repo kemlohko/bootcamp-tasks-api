@@ -1,6 +1,10 @@
 locals {
-  cluster_name = "eks-taskly-${var.developer_name}-${var.environment}"
-  vpc_name     = "vpc-taskly-${var.developer_name}-${var.environment}"
+  cluster_name = "platform-eks-${var.developer_name}"
+  vpc_name     = "platform-vpc-${var.developer_name}"
+}
+
+data "aws_route53_zone" "platform_hosted_zone" {
+  name = "ironlabs.online"
 }
 
 # -------- Set k8s provider ----------
@@ -40,9 +44,6 @@ module "vpc" {
   public_subnet_tags  = { "kubernetes.io/role/elb" = "1" }
   private_subnet_tags = { "kubernetes.io/role/internal-elb" = "1" }
 
-  tags = {
-    Environment = var.environment
-  }
 }
 
 # --- EKS cluster + worker nodes ---
@@ -67,31 +68,25 @@ module "eks" {
       desired_size   = var.desired_nodes
     }
   }
-
-  tags = {
-    Environment = var.environment
-  }
 }
 
 # ------ RDS --------
 module "rds" {
-  source = "../../modules/rds-postgres"
+  source = "./modules/rds-postgres"
 
-  environment                = var.environment
   vpc_id                     = module.vpc.vpc_id
   private_subnet_ids         = module.vpc.private_subnets
   eks_node_security_group_id = module.eks.node_security_group_id
   db_instance_class          = var.db_instance_class
-  db_username                = "taskly_${var.developer_name}_${var.environment}"
+  db_username                = "taskly_${var.developer_name}"
   db_name                    = var.db_name
   developer_name             = var.developer_name
 }
 
 # ------- Redis ----------
 module "redis" {
-  source = "../../modules/elasticache-redis"
+  source = "./modules/elasticache-redis"
 
-  environment                = var.environment
   vpc_id                     = module.vpc.vpc_id
   private_subnet_ids         = module.vpc.private_subnets
   eks_node_security_group_id = module.eks.node_security_group_id
@@ -106,11 +101,11 @@ resource "kubernetes_secret_v1" "taskly_db" {
   }
 
   data = {
-    DB_HOST    = module.rds.endpoint
-    DB_PORT    = tostring(module.rds.port)
-    DB_NAME    = module.rds.database_name
-    REDIS_HOST = module.redis.endpoint
-    REDIS_PORT = tostring(module.redis.port)
+    DB_HOST       = module.rds.endpoint
+    DB_PORT       = tostring(module.rds.port)
+    DB_NAME       = module.rds.database_name
+    REDIS_HOST    = module.redis.endpoint
+    REDIS_PORT    = tostring(module.redis.port)
     DB_SECRET_ARN = module.rds.master_user_secret_arn # the pod uses it later to retrieve the db password from the secret manager
   }
 
@@ -127,7 +122,7 @@ data "aws_iam_policy_document" "taskly_secrets_access" {
 }
 
 resource "aws_iam_policy" "taskly_secrets_access" {
-  name   = "taskly-${var.developer_name}-${var.environment}-secrets-access"
+  name   = "platform-${var.developer_name}-secrets-access"
   policy = data.aws_iam_policy_document.taskly_secrets_access.json
 }
 
@@ -135,12 +130,12 @@ module "taskly_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
   version = "~> 5.0"
 
-  role_name = "taskly-${var.developer_name}-${var.environment}-app-role"
+  role_name = "platform-${var.developer_name}-app-role"
 
   oidc_providers = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["default:taskly-app"]  # namespace:service-account-name
+      namespace_service_accounts = ["default:platform-app"] # namespace:service-account-name
     }
   }
 
@@ -151,10 +146,47 @@ module "taskly_irsa" {
 
 resource "kubernetes_service_account_v1" "taskly_app" {
   metadata {
-    name      = "taskly-app"
+    name      = "platform-app"
     namespace = "default"
     annotations = {
       "eks.amazonaws.com/role-arn" = module.taskly_irsa.iam_role_arn
     }
+  }
+}
+
+# ------------- External DNS IRSA -----------------
+data "aws_iam_policy_document" "external_dns" {
+  statement {
+    effect    = "Allow"
+    actions   = ["route53:ChangeResourceRecordSets"]
+    resources = ["arn:aws:route53:::hostedzone/${var.hosted_zone_id}"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["route53:ListHostedZones", "route53:ListResourceRecordSets"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_policy" "external_dns" {
+  name   = "platform-${var.developer_name}-external-dns"
+  policy = data.aws_iam_policy_document.external_dns.json
+}
+
+module "external_dns_irsa" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
+
+  role_name = "platform-${var.developer_name}-external-dns-role"
+
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["external-dns:external-dns"]
+    }
+  }
+
+  role_policy_arns = {
+    external_dns = aws_iam_policy.external_dns.arn
   }
 }
