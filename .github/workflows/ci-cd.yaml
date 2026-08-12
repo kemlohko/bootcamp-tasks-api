@@ -47,7 +47,7 @@ jobs:
       - name: Build image
         working-directory: taskly
         env: 
-          ECR_REGISTRY: ${{ steps.ecr-login.ouputs.registry }}
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           IMAGE_TAG: ${{ steps.vars.outputs.image_tag }}
         run: |
           docker build -t ${ECR_REGISTRY}/${{ env.ECR_REPOSITORY }}:${IMAGE_TAG} ./app
