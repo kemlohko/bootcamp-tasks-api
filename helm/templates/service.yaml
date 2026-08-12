@@ -4,7 +4,7 @@ metadata:
   name: taskly-service
   namespace: {{ .Release.Namespace }}
   labels:
-    app: taskly-api
+    app: taskly-service
 spec:
   type: {{ .Values.service.type }}
   selector:
