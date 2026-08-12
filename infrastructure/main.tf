@@ -107,9 +107,10 @@ resource "kubernetes_secret_v1" "taskly_db" {
     DB_HOST       = module.rds.endpoint
     DB_PORT       = tostring(module.rds.port)
     DB_NAME       = module.rds.database_name
-    DB_USER       = "taskly_admin"
+    DB_USER       = "taskly_${var.developer_name}"
     DB_SECRET_ARN = module.rds.master_user_secret_arn
-    REDIS_URL     = "redis://${module.redis.endpoint}:${module.redis.port}"
+    REDIS_HOST = module.redis.endpoint
+    REDIS_PORT = module.redis.port
   }
 
   type = "Opaque"
