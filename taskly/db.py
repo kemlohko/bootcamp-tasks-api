@@ -48,7 +48,7 @@ async def connect():
     global pool
     logger.info("Connecting to database...")
     try:
-        pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=10)
+        pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=10, ssl="require")
         async with pool.acquire() as conn:
             await conn.execute(CREATE_TABLE_SQL)
         logger.info("Database connected and schema ready")

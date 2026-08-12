@@ -96,17 +96,20 @@ module "redis" {
 
 # ------ k8s secrets ------
 resource "kubernetes_secret_v1" "taskly_db" {
+  for_each = toset(["taskly-staging", "taskly-production"])
+
   metadata {
-    name = "taskly-db-credentials"
+    name      = "taskly-db-credentials"
+    namespace = each.key
   }
 
   data = {
     DB_HOST       = module.rds.endpoint
     DB_PORT       = tostring(module.rds.port)
     DB_NAME       = module.rds.database_name
-    REDIS_HOST    = module.redis.endpoint
-    REDIS_PORT    = tostring(module.redis.port)
-    DB_SECRET_ARN = module.rds.master_user_secret_arn # the pod uses it later to retrieve the db password from the secret manager
+    DB_USER       = "taskly_admin"
+    DB_SECRET_ARN = module.rds.master_user_secret_arn
+    REDIS_URL     = "redis://${module.redis.endpoint}:${module.redis.port}"
   }
 
   type = "Opaque"
@@ -135,7 +138,10 @@ module "taskly_irsa" {
   oidc_providers = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["default:platform-app"] # namespace:service-account-name
+      namespace_service_accounts = [
+        "taskly-staging:taskly-app",
+         "taskly-production:taskly-app",
+      ]
     }
   }
 
@@ -145,9 +151,11 @@ module "taskly_irsa" {
 }
 
 resource "kubernetes_service_account_v1" "taskly_app" {
+  for_each = toset(["taskly-staging", "taskly-production"])
+
   metadata {
-    name      = "platform-app"
-    namespace = "default"
+    name      = "taskly-app"
+    namespace = each.key
     annotations = {
       "eks.amazonaws.com/role-arn" = module.taskly_irsa.iam_role_arn
     }
