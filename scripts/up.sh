@@ -54,6 +54,10 @@ echo ">> Installing Prometheus + Grafana..."
 chmod u+x install-monitoring.sh
 ./install-monitoring.sh
 
+echo ">> Installing Loki..."
+chmod u+x install-loki.sh
+./install-loki.sh
+
 echo ">> Installing NGINX ingress..."
 chmod u+x install-nginx-ingress.sh
 ./install-nginx-ingress.sh
