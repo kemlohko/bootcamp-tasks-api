@@ -1,5 +1,5 @@
 image:
-  tag: "REPLACED_ON_PROMOTION"   # copied from staging's digest after manual approval
+  tag: "bbf6cf72f506aea7fec203cde199ba4dab9b9c26"
 
 replicaCount: 3
 
