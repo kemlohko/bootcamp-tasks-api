@@ -62,7 +62,7 @@ async def disconnect():
     await pool.close()
 
 async def list_tasks():
-    cached = await cache.get("tasks:list")
+    cached = await cache.get(f"{TASKS_TABLE_NAME}:list")
     if cached is not None:
         return cached
 
@@ -70,11 +70,11 @@ async def list_tasks():
         rows = await conn.fetch(f"SELECT id, title, description, done, priority FROM {TASKS_TABLE_NAME} ORDER BY id")
     result = [dict(row) for row in rows]
 
-    await cache.set("tasks:list", result)
+    await cache.set(f"{TASKS_TABLE_NAME}:list", result)
     return result
 
 async def get_task(task_id: int):
-    cached_key = f"tasks:{task_id}"
+    cached_key = f"{TASKS_TABLE_NAME}:{task_id}"
     cached = await cache.get(cached_key)
     if cached is not None:
         return cached
@@ -99,7 +99,7 @@ async def create_task(title, description, done, priority):
             """,
             title, description, done, priority
         )
-    await cache.delete("tasks:list") # list is now stale
+    await cache.delete(f"{TASKS_TABLE_NAME}:list") # list is now stale
     return dict(row)
 
 async def update_task(task_id: int, title, description, done, priority):
@@ -113,8 +113,8 @@ async def update_task(task_id: int, title, description, done, priority):
             title, description, done, priority, task_id
         )
     if row:
-        await cache.delete("tasks:list")
-        await cache.delete(f"tasks:{task_id}")
+        await cache.delete(f"{TASKS_TABLE_NAME}:list")
+        await cache.delete(f"{TASKS_TABLE_NAME}:{task_id}")
     return dict(row) if row else None
 
 async def delete_task(task_id: int) -> bool:
@@ -122,8 +122,8 @@ async def delete_task(task_id: int) -> bool:
         result = await conn.execute(f"DELETE FROM {TASKS_TABLE_NAME} WHERE id = $1", task_id)
     deleted = result != "DELETE 0"
     if deleted:
-        await cache.delete("tasks:list")
-        await cache.delete(f"tasks:{task_id}")
+        await cache.delete(f"{TASKS_TABLE_NAME}:list")
+        await cache.delete(f"{TASKS_TABLE_NAME}:{task_id}")
     return deleted
 
 async def ping() -> bool:
