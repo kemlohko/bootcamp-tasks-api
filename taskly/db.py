@@ -33,7 +33,7 @@ def build_database_url():
 DATABASE_URL = build_database_url()
 
 
-CREATE_TABLE_SQL = """
+CREATE_TABLE_SQL = f"""
 CREATE TABLE IF NOT EXISTS {TASKS_TABLE_NAME} (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
