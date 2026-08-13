@@ -6,6 +6,7 @@ import boto3
 
 
 DB_SECRET_ARN = os.environ.get("DB_SECRET_ARN")
+TASKS_TABLE_NAME = os.environ.get("TASKS_TABLE_NAME", "tasks")
 
 
 def get_db_password():
@@ -33,7 +34,7 @@ DATABASE_URL = build_database_url()
 
 
 CREATE_TABLE_SQL = """
-CREATE TABLE IF NOT EXISTS tasks (
+CREATE TABLE IF NOT EXISTS {TASKS_TABLE_NAME} (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
