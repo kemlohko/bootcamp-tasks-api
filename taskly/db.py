@@ -58,7 +58,7 @@ async def connect():
         raise
 
 async def disconnect():
-    logger.info("Clossing database connection pool")
+    logger.info("Closing database connection pool")
     await pool.close()
 
 async def list_tasks():
@@ -67,7 +67,7 @@ async def list_tasks():
         return cached
 
     async with pool.acquire() as conn:
-        rows = await conn.fetch("SELECT id, title, description, done, priority FROM tasks ORDER BY id")
+        rows = await conn.fetch(f"SELECT id, title, description, done, priority FROM {TASKS_TABLE_NAME} ORDER BY id")
     result = [dict(row) for row in rows]
 
     await cache.set("tasks:list", result)
@@ -81,7 +81,7 @@ async def get_task(task_id: int):
 
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            "SELECT id, title, description, done, priority FROM tasks WHERE id = $1", task_id
+            f"SELECT id, title, description, done, priority FROM {TASKS_TABLE_NAME} WHERE id = $1", task_id
         )
     result =  dict(row) if row else None
 
@@ -92,8 +92,8 @@ async def get_task(task_id: int):
 async def create_task(title, description, done, priority):
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            """
-            INSERT INTO tasks (title, description, done, priority)
+            f"""
+            INSERT INTO {TASKS_TABLE_NAME} (title, description, done, priority)
             VALUES ($1, $2, $3, $4)
             RETURNING id, title, description, done, priority
             """,
@@ -105,8 +105,8 @@ async def create_task(title, description, done, priority):
 async def update_task(task_id: int, title, description, done, priority):
     async with pool.acquire() as conn:
         row = await conn.fetchrow(
-            """
-            UPDATE tasks SET title = $1, description = $2, done = $3, priority = $4
+            f"""
+            UPDATE {TASKS_TABLE_NAME} SET title = $1, description = $2, done = $3, priority = $4
             WHERE id = $5
             RETURNING id, title, description, done, priority
             """,
@@ -119,11 +119,12 @@ async def update_task(task_id: int, title, description, done, priority):
 
 async def delete_task(task_id: int) -> bool:
     async with pool.acquire() as conn:
-        result = await conn.execute("DELETE FROM tasks WHERE id = $1", task_id)
+        result = await conn.execute(f"DELETE FROM {TASKS_TABLE_NAME} WHERE id = $1", task_id)
     deleted = result != "DELETE 0"
     if deleted:
         await cache.delete("tasks:list")
         await cache.delete(f"tasks:{task_id}")
+    return deleted
 
 async def ping() -> bool:
     async with pool.acquire() as conn:

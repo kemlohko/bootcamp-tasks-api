@@ -107,5 +107,7 @@ async def update_task(task_id: int, task: Task):
 async def delete_task(task_id: int):
     deleted = await db.delete_task(task_id) 
     if not deleted:
+        logger.warning(f"task with id={task_id} not found")
         raise HTTPException(status_code=404, detail="Task not found")
     metrics.TASKS_ACTIVE.dec()
+    logger.info(f"deleted task id={task_id}")
