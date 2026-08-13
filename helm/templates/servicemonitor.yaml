@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: taskly-api
+  namespace: {{ .Release.Namespace }}
+  labels:
+    release: monitoring   # must match kube-prometheus-stack's expected label
+spec:
+  selector:
+    matchLabels:
+      app: taskly-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

@@ -2,7 +2,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: taskly-api
+  name: taskly-hpa
   namespace: {{ .Release.Namespace }}
 spec:
   scaleTargetRef:
