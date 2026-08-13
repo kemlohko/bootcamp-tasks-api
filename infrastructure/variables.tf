@@ -18,7 +18,7 @@ variable "cluster_version" {
 # Node count knobs (used by Terraform; Option B changes these live)
 variable "desired_nodes" {
   type    = number
-  default = 2
+  default = 3
 }
 variable "min_nodes" {
   type    = number
@@ -26,7 +26,7 @@ variable "min_nodes" {
 }
 variable "max_nodes" {
   type    = number
-  default = 3
+  default = 5
 }
 variable "db_instance_class" {
   type    = string
@@ -44,10 +44,6 @@ variable "db_username" {
 variable "db_name" {
   type    = string
   default = "taskly"
-}
-variable "environment" {
-  type    = string
-  default = "staging"
 }
 variable "instance_type" {
   type    = string
