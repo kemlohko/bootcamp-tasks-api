@@ -1,0 +1,41 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: taskly-alerts
+  namespace: taskly-production
+  labels:
+    release: monitoring
+spec:
+  groups:
+    - name: taskly.rules
+      rules:
+        - alert: TasklyHighErrorRate
+          expr: |
+            100 * sum(rate(http_requests_total{namespace="taskly-production", status_code=~"5.."}[5m]))
+            / sum(rate(http_requests_total{namespace="taskly-production"}[5m])) > 5
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Taskly production error rate above 5%"
+            description: "Error rate has been above 5% for more than 2 minutes in taskly-production."
+
+        - alert: TasklyHighLatency
+          expr: |
+            histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace="taskly-production"}[5m])) by (le)) > 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Taskly production p95 latency above 1s"
+            description: "p95 request latency has exceeded 1 second for more than 5 minutes in taskly-production."
+
+        - alert: TasklyAPIDown
+          expr: |
+            absent(up{job="taskly-service", namespace="taskly-production"} == 1)
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Taskly production API is unreachable"
+            description: "Prometheus has not been able to scrape taskly-api in taskly-production for over 1 minute."
