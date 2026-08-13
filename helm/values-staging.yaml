@@ -1,7 +1,7 @@
 image:
   tag: "4553595c85255feccb80f79ed830a2fed0bba729"
 
-replicaCount: 0
+replicaCount: 2
 
 autoscaling:
   minReplicas: 2
