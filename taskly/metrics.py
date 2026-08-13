@@ -21,7 +21,7 @@ TASKS_CREATED = Counter(
 )
 
 # Custom business metric - tasks active
-TASKS_ACTIVE = Counter(
+TASKS_ACTIVE = Gauge(
     "tasks_active",
     "Current number of tasks in the database",
 )
