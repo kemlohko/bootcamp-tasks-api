@@ -1,15 +1,15 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: taskly-servicemonitor
+  name: {{ .Values.deployment.name }}-servicemonitor
   namespace: {{ .Release.Namespace }}
   labels:
-    release: monitoring   # must match kube-prometheus-stack's expected label
+    release: {{ .Values.servicemonitor.release }}  # must match kube-prometheus-stack's expected label
 spec:
   selector:
     matchLabels:
-      app: taskly-service
+      app: {{ .Values.service.appLabel }}
   endpoints:
-    - port: http
-      path: /metrics
-      interval: 15s
+    - port: {{ .Values.servicemonitor.port}}
+      path: {{ .Values.servicemonitor.path }}
+      interval: {{ .Values.servicemonitor.interval }}

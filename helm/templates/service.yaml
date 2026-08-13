@@ -1,15 +1,15 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: taskly-service
+  name: {{ .Values.service.name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: taskly-service
+    app: {{ .Values.service.appLabel }}
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: taskly-api
+    app: {{ .Values.deployment.appSelectorLabel }}
   ports:
-    - name: http
+    - name: {{ .Values.service.portName }}
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.targetPort }}

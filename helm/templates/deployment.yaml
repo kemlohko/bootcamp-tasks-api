@@ -1,30 +1,32 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: taskly-api
+  name: {{ .Values.deployment.name }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: taskly-api
+    app: {{ .Values.deployment.appLabel }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: taskly-api
+      app: {{ .Values.deployment.appSelectorLabel }}
   template:
     metadata:
       labels:
-        app: taskly-api
+        app: {{ .Values.deployment.appSelectorLabel }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       containers:
-        - name: taskly-api
+        - name: {{ .Values.deployment.containerName }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 8000
+            - containerPort: {{ .Values.deployment.containerPort }}
           env:
-            - name: TASKS_TABLE_NAME
-              value: {{ .Values.tasksTableName | quote }}
+            {{- range $key, $value := .Values.extraEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           envFrom:
             - secretRef:
                 name: {{ .Values.envSecretName }}
@@ -33,17 +35,17 @@ spec:
           livenessProbe:
             httpGet:
               path: {{ .Values.livenessProbe.path }}
-              port: 8000
+              port: {{ .Values.livenessProbe.port }}
             initialDelaySeconds: {{ .Values.livenessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
           readinessProbe:
             httpGet:
               path: {{ .Values.readinessProbe.path }}
-              port: 8000
+              port: {{ .Values.readinessProbe.port }}
             initialDelaySeconds: {{ .Values.readinessProbe.initialDelaySeconds }}
             periodSeconds: {{ .Values.readinessProbe.periodSeconds }}
           securityContext:
-            runAsNonRoot: true
-            runAsUser: 10001
-            readOnlyRootFilesystem: true
-            allowPrivilegeEscalation: false
+            runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+            runAsUser: {{ .Values.securityContext.runAsUser }}
+            readOnlyRootFilesystem: {{ .Values.securityContext.readOnlyRootFilesystem }}
+            allowPrivilegeEscalation: {{ .Values.securityContext.allowPrivilegeEscalation }}

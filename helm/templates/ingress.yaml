@@ -2,21 +2,23 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: taskly-ingress
+  name: {{ .Values.deployment.name }}-ingress
   namespace: {{ .Release.Namespace }}
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: {{ .Values.ingress.host }}
+    external-dns.alpha.kubernetes.io/hostname: {{ join "," .Values.ingress.hosts }}
 spec:
   ingressClassName: nginx
   rules:
-    - host: {{ .Values.ingress.host }}
+    {{- range .Values.ingress.hosts }}
+    - host: {{ . }}
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: taskly-service
+                name: {{ $.Values.service.name }}
                 port:
-                  number: {{ .Values.service.port }}
+                  number: {{ $.Values.service.port }}
+    {{- end }}
 {{- end }}

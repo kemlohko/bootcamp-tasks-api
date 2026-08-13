@@ -13,6 +13,16 @@ service:
   type: ClusterIP
   port: 8000
   targetPort: 8000
+  name: taskly-service
+  appLabel: taskly-service
+  portName: http
+
+deployment:
+  name: taskly-api
+  appLabel: taskly-api
+  appSelectorLabel: taskly-api
+  containerName: taskly-api
+  containerPort: 8000
 
 resources:
   requests:
@@ -33,13 +43,27 @@ envSecretName: taskly-db-credentials
 
 livenessProbe:
   path: /health
+  port: 8000
   initialDelaySeconds: 10
   periodSeconds: 15
 
 readinessProbe:
   path: /health
+  port: 8000
   initialDelaySeconds: 5
   periodSeconds: 10
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+
+servicemonitor:
+  release: monitoring 
+  port: http
+  path: /metrics
+  interval: 15s
 
 ingress:
   enabled: false   # enabled per-environment

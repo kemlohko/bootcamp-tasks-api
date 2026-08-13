@@ -9,6 +9,8 @@ autoscaling:
 
 ingress:
   enabled: true
-  host: alex.staging.taskly.ironlabs.online
+  hosts: 
+    - alex.staging.taskly.ironlabs.online
 
-tasksTableName: tasks_staging
+extraEnv:
+  TASKS_TABLE_NAME: tasks_staging
