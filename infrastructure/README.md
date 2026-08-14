@@ -7,25 +7,23 @@ You just need a working AWS account (with your AWS CLI already set up).
 ```bash
 cd infrastructure
 chmod +x up.sh down.sh
-./up.sh <your-name> <environment>
+./up.sh <your-name>
 ```
 
 Example:
 ```bash
-./up.sh richard staging
+./up.sh alex
 ```
 
-Valid environments: `staging`, `production`
-
-2. When you're done, turn it off — **always use the same `<your-name>` and `<environment>` you used to bring it up**, or Terraform won't be able to find/target the right resources:
+2. When you're done, turn it off — **always use the same `<your-name>` you used to bring it up**, or Terraform won't be able to find/target the right resources:
 
 ```bash
-./down.sh <your-name> <environment>
+./down.sh <your-name>
 ```
 
 Example:
 ```bash
-./down.sh richard staging
+./down.sh alex
 ```
 
 ⚠️ **Don't forget to run `down.sh`** — an idle EKS cluster + RDS + ElastiCache still bills continuously even with zero traffic.
